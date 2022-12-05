@@ -10,7 +10,7 @@ module.exports.default = async ({ getNamedAccounts, deployments }) => {
 	const { deployer } = await getNamedAccounts();
 	const chainId = network.config.chainId;
 	console.log(chainId);
-	const doc = await deploy("secureDocument", {
+	const doc = await deploy("bookNft", {
 		from: deployer,
 		args: [],
 		log: true,

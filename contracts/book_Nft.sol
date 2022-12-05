@@ -2,51 +2,42 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+ 
+contract bookNft {
+    address payable immutable i_feeAddress;
+    uint public immutable i_percent;
+    uint256 itemCount;
 
-// Check out https://github.com/Fantom-foundation/Artion-Contracts/blob/5c90d2bc0401af6fb5abf35b860b762b31dfee02/contracts/FantomMarketplace.sol
-// For a full decentralized nft marketplace
+constructor (uint _feePercent){
+    i_feeAddress = payable (msg.sender);
+    i_feeAmmount = _feePercent;
+}
 
-error PriceNotMet(address nftAddress, uint256 tokenId, uint256 price);
-error ItemNotForSale(address nftAddress, uint256 tokenId);
-error NotListed(address nftAddress, uint256 tokenId);
-error AlreadyListed(address nftAddress, uint256 tokenId);
-error NoProceeds();
-error NotOwner();
-error NotApprovedForMarketplace();
-error PriceMustBeAboveZero();
 
-// Error thrown for isNotOwner modifier
-// error IsNotOwner()
 
-contract NftMarketplace is ReentrancyGuard {
-    struct Listing {
+    struct book {
+        bookId;
+        IERC721 nft;
         uint256 price;
-        address seller;
+        uint256 tokenId
+        address payable seller;
+        bool sold;
     }
 
-    event ItemListed(
-        address indexed seller,
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 price
-    );
 
-    event ItemCanceled(
-        address indexed seller,
-        address indexed nftAddress,
-        uint256 indexed tokenId
-    );
 
-    event ItemBought(
+
+
+   
+
+    event bookBought(
         address indexed buyer,
         address indexed nftAddress,
         uint256 indexed tokenId,
         uint256 price
     );
 
-    mapping(address => mapping(uint256 => Listing)) private s_listings;
-    mapping(address => uint256) private s_proceeds;
+    mapping( uint256 => book) private bookMapping;
 
     modifier notListed(
         address nftAddress,
@@ -80,10 +71,7 @@ contract NftMarketplace is ReentrancyGuard {
         _;
     }
 
-    // IsNotOwner Modifier - Nft Owner can't buy his/her NFT
-    // Modifies buyItem function
-    // Owner should only list, cancel listing or update listing
-    /* modifier isNotOwner(
+     modifier isNotOwner(
         address nftAddress,
         uint256 tokenId,
         address spender
@@ -96,130 +84,60 @@ contract NftMarketplace is ReentrancyGuard {
         _;
     } */
 
-    /////////////////////
-    // Main Functions //
-    /////////////////////
-    /*
-     * @notice Method for listing NFT
-     * @param nftAddress Address of NFT contract
-     * @param tokenId Token ID of NFT
-     * @param price sale price for each item
-     */
-    function listItem(
-        address nftAddress,
-        uint256 tokenId,
-        uint256 price
+
+    function listBook(
+        IERC721 nftAddress,
+        uint256 _bookId,
+        uint256 _price
     )
-        external
-        notListed(nftAddress, tokenId)
-        isOwner(nftAddress, tokenId, msg.sender)
+     external
+     returns (uint256)
+        
+
     {
-        if (price <= 0) {
-            revert PriceMustBeAboveZero();
-        }
-        IERC721 nft = IERC721(nftAddress);
-        if (nft.getApproved(tokenId) != address(this)) {
-            revert NotApprovedForMarketplace();
-        }
-        s_listings[nftAddress][tokenId] = Listing(price, msg.sender);
+        require (_price >0, "price should be greater than zero")
+        itemCount ++;
+         nftAddress.transferFrom (msg.sender, address (this), tokenId);
+        bookMapping[bookID]= book (itemCount,nftAddress,price,_bookId,payable(msg.sender),false);
+
         emit ItemListed(msg.sender, nftAddress, tokenId, price);
+
+        return itemCount;
     }
 
-    /*
-     * @notice Method for cancelling listing
-     * @param nftAddress Address of NFT contract
-     * @param tokenId Token ID of NFT
-     */
-    function cancelListing(address nftAddress, uint256 tokenId)
-        external
-        isOwner(nftAddress, tokenId, msg.sender)
-        isListed(nftAddress, tokenId)
-    {
-        delete (s_listings[nftAddress][tokenId]);
-        emit ItemCanceled(msg.sender, nftAddress, tokenId);
-    }
+     
 
-    /*
-     * @notice Method for buying listing
-     * @notice The owner of an NFT could unapprove the marketplace,
-     * which would cause this function to fail
-     * Ideally you'd also have a `createOffer` functionality.
-     * @param nftAddress Address of NFT contract
-     * @param tokenId Token ID of NFT
-     */
-    function buyItem(address nftAddress, uint256 tokenId)
+
+
+
+ 
+    
+
+
+    function buyItem(uint256 bookId)
         external
         payable
-        isListed(nftAddress, tokenId)
-        // isNotOwner(nftAddress, tokenId, msg.sender)
-        nonReentrant
+    
+
     {
-        // Challenge - How would you refactor this contract to take:
-        // 1. Abitrary tokens as payment? (HINT - Chainlink Price Feeds!)
-        // 2. Be able to set prices in other currencies?
-        // 3. Tweet me @PatrickAlphaC if you come up with a solution!
-        Listing memory listedItem = s_listings[nftAddress][tokenId];
-        if (msg.value < listedItem.price) {
-            revert PriceNotMet(nftAddress, tokenId, listedItem.price);
-        }
-        s_proceeds[listedItem.seller] += msg.value;
-        // Could just send the money...
-        // https://fravoll.github.io/solidity-patterns/pull_over_push.html
-        delete (s_listings[nftAddress][tokenId]);
-        IERC721(nftAddress).safeTransferFrom(listedItem.seller, msg.sender, tokenId);
-        emit ItemBought(msg.sender, nftAddress, tokenId, listedItem.price);
+         uint256 totalPrice = calcTotalPrice (bookId)
+        book memory bookFound = bookMapping[bookId];
+        require (msg.value < totalPrice, "not enough money ");
+        bookFound.seller.transfer (bookFound.price);
+        i_feeAddress.transfer(totalPrice- bookFound.price);
+        bookFound.nft.safeTransferFrom(address(this), msg.sender,bookFound.tokenId);
+        emit ItemBought(msg.sender, bookFound.nft, bookFound.tokenId, bookFound.price);
     }
 
-    /*
-     * @notice Method for updating listing
-     * @param nftAddress Address of NFT contract
-     * @param tokenId Token ID of NFT
-     * @param newPrice Price in Wei of the item
-     */
-    function updateListing(
-        address nftAddress,
-        uint256 tokenId,
-        uint256 newPrice
-    )
-        external
-        isListed(nftAddress, tokenId)
-        nonReentrant
-        isOwner(nftAddress, tokenId, msg.sender)
-    {
-        //We should check the value of `newPrice` and revert if it's below zero (like we also check in `listItem()`)
-        if (newPrice <= 0) {
-            revert PriceMustBeAboveZero();
-        }
-        s_listings[nftAddress][tokenId].price = newPrice;
-        emit ItemListed(msg.sender, nftAddress, tokenId, newPrice);
-    }
+    
+    function calcTotalPrice (uint256 bookId) public view  returns (uint2256){
+        return bookMapping [bookId].price * (100 + i_percent/100)
 
-    /*
-     * @notice Method for withdrawing proceeds from sales
-     */
-    function withdrawProceeds() external {
-        uint256 proceeds = s_proceeds[msg.sender];
-        if (proceeds <= 0) {
-            revert NoProceeds();
-        }
-        s_proceeds[msg.sender] = 0;
-        (bool success, ) = payable(msg.sender).call{value: proceeds}("");
-        require(success, "Transfer failed");
     }
+     
 
-    /////////////////////
-    // Getter Functions //
-    /////////////////////
 
-    function getListing(address nftAddress, uint256 tokenId)
-        external
-        view
-        returns (Listing memory)
-    {
-        return s_listings[nftAddress][tokenId];
-    }
-
-    function getProceeds(address seller) external view returns (uint256) {
-        return s_proceeds[seller];
-    }
+    
+  
+ 
 }

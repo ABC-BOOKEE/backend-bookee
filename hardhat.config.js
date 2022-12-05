@@ -11,7 +11,7 @@ console.log(process.env.PRIVATE_KEY)
 module.exports = {
 	solidity: "0.8.7",
 	networks: {
-		ganache: {
+		alphachain: {
 			url: "https://rpc.all.co.tz/",
 			chainId:19611009,
 			accounts: [process.env.PRIVATE_KEY],
