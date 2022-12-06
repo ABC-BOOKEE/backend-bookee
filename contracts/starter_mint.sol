@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
@@ -12,10 +12,10 @@ contract bookMint is ERC721URIStorage {
         tokenCounter = 0;
     }
 
-    function mintNft(string memory tokenUri) external return (uint256){
+    function mintNft(string memory tokenUri) external returns (uint256){
         tokenCounter ++;
         _safeMint(msg.sender, tokenCounter);
-        _setTokenURI (tokenCounter,tokenUri)
+        _setTokenURI (tokenCounter,tokenUri);
 
         return tokenCounter;
     }

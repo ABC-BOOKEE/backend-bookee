@@ -12,7 +12,7 @@ module.exports.default = async ({ getNamedAccounts, deployments }) => {
 	console.log(chainId);
 	const doc = await deploy("bookNft", {
 		from: deployer,
-		args: [],
+		args: [30],
 		log: true,
 	});
 };

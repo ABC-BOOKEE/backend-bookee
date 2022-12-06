@@ -5,11 +5,11 @@ async function main() {
   
     console.log("Account balance:", (await deployer.getBalance()).toString());
   
-    const marketPlace = await ethers.getContractFactory("secureDocument");
+    const marketPlace = await ethers.getContractFactory("bookNft");
 
-    const starteMint = await ethers.getContractFactory("secureDocument");
-    const market = await marketPlace.deploy();
-    const starter = await marketPlace.deploy();
+    const starteMint = await ethers.getContractFactory("bookMint");
+    const market = await marketPlace.deploy(30);
+    const starter = await starteMint.deploy();
   
     console.log("market Place address:", market.address);
     console.log("starter Place address:", starter.address);

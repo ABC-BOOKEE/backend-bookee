@@ -10,16 +10,16 @@ contract bookNft {
 
 constructor (uint _feePercent){
     i_feeAddress = payable (msg.sender);
-    i_feeAmmount = _feePercent;
+    i_percent = _feePercent;
 }
 
 
 
     struct book {
-        bookId;
+        uint256 bookId;
         IERC721 nft;
         uint256 price;
-        uint256 tokenId
+        uint256 tokenId;
         address payable seller;
         bool sold;
     }
@@ -32,59 +32,17 @@ constructor (uint _feePercent){
 
     event bookBought(
         address indexed buyer,
-        address indexed nftAddress,
+        IERC721 indexed nftAddress,
         uint256 indexed tokenId,
         uint256 price
     );
 
     mapping( uint256 => book) private bookMapping;
+ 
 
-    modifier notListed(
-        address nftAddress,
-        uint256 tokenId
-    ) {
-        Listing memory listing = s_listings[nftAddress][tokenId];
-        if (listing.price > 0) {
-            revert AlreadyListed(nftAddress, tokenId);
-        }
-        _;
-    }
-
-    modifier isListed(address nftAddress, uint256 tokenId) {
-        Listing memory listing = s_listings[nftAddress][tokenId];
-        if (listing.price <= 0) {
-            revert NotListed(nftAddress, tokenId);
-        }
-        _;
-    }
-
-    modifier isOwner(
-        address nftAddress,
-        uint256 tokenId,
-        address spender
-    ) {
-        IERC721 nft = IERC721(nftAddress);
-        address owner = nft.ownerOf(tokenId);
-        if (spender != owner) {
-            revert NotOwner();
-        }
-        _;
-    }
-
-     modifier isNotOwner(
-        address nftAddress,
-        uint256 tokenId,
-        address spender
-    ) {
-        IERC721 nft = IERC721(nftAddress);
-        address owner = nft.ownerOf(tokenId);
-        if (spender == owner) {
-            revert IsNotOwner();
-        }
-        _;
-    } */
-
-
+     
+   
+ 
     function listBook(
         IERC721 nftAddress,
         uint256 _bookId,
@@ -95,12 +53,10 @@ constructor (uint _feePercent){
         
 
     {
-        require (_price >0, "price should be greater than zero")
+        require (_price >0, "price should be greater than zero");
         itemCount ++;
-         nftAddress.transferFrom (msg.sender, address (this), tokenId);
-        bookMapping[bookID]= book (itemCount,nftAddress,price,_bookId,payable(msg.sender),false);
-
-        emit ItemListed(msg.sender, nftAddress, tokenId, price);
+         nftAddress.transferFrom (msg.sender, address (this),_bookId);
+        bookMapping[_bookId]= book (itemCount,nftAddress,_price,_bookId,payable(msg.sender),false);
 
         return itemCount;
     }
@@ -120,18 +76,18 @@ constructor (uint _feePercent){
     
 
     {
-         uint256 totalPrice = calcTotalPrice (bookId)
+         uint256 totalPrice = calcTotalPrice (bookId);
         book memory bookFound = bookMapping[bookId];
         require (msg.value < totalPrice, "not enough money ");
         bookFound.seller.transfer (bookFound.price);
         i_feeAddress.transfer(totalPrice- bookFound.price);
         bookFound.nft.safeTransferFrom(address(this), msg.sender,bookFound.tokenId);
-        emit ItemBought(msg.sender, bookFound.nft, bookFound.tokenId, bookFound.price);
+        emit bookBought(msg.sender, bookFound.nft, bookFound.tokenId, bookFound.price);
     }
 
     
-    function calcTotalPrice (uint256 bookId) public view  returns (uint2256){
-        return bookMapping [bookId].price * (100 + i_percent/100)
+    function calcTotalPrice (uint256 bookId) public view  returns (uint256){
+        return bookMapping [bookId].price * (100 + i_percent/100);
 
     }
      
