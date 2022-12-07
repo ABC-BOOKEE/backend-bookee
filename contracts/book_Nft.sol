@@ -38,6 +38,8 @@ constructor (uint _feePercent){
     );
 
     mapping( uint256 => book) private bookMapping;
+
+    book [] bookArray;
  
 
      
@@ -57,6 +59,8 @@ constructor (uint _feePercent){
         itemCount ++;
          nftAddress.transferFrom (msg.sender, address (this),_bookId);
         bookMapping[_bookId]= book (itemCount,nftAddress,_price,_bookId,payable(msg.sender),false);
+        book memory newBk = book (itemCount,nftAddress,_price,_bookId,payable(msg.sender),false);
+        bookArray.push(newBk);
 
         return itemCount;
     }
@@ -91,7 +95,9 @@ constructor (uint _feePercent){
 
     }
      
-
+function getBooks () public view  returns (book [] memory){
+    return bookArray;
+}
 
     
   
